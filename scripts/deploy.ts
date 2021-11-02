@@ -20,17 +20,6 @@ async function main() {
   );
   await gameContract.deployed();
   console.log("Contract deployed to: ", gameContract.address);
-
-  let txn = await gameContract.mintCharacterNFT(0);
-  await txn.wait();
-
-  txn = await gameContract.attackBoss();
-  await txn.wait();
-
-  txn = await gameContract.attackBoss();
-  await txn.wait();
-
-  console.log("Done!");
 }
 
 async function runMain() {
