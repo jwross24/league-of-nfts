@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "hardhat/console.sol";
 import "./libraries/Base64.sol";
 
@@ -16,7 +17,6 @@ contract LeagueOfNFTs is ERC721 {
         uint hp;
         uint maxHp;
         uint attackDamage;
-        uint attackSpeed;
         uint armor;
     }
 
@@ -28,14 +28,40 @@ contract LeagueOfNFTs is ERC721 {
     mapping (uint256 => CharacterAttributes) public nftHolderAttributes;
     mapping (address => uint256) public nftHolders;
 
+    struct BigBoss {
+        string name;
+        string imageURI;
+        uint hp;
+        uint maxHp;
+        uint attackDamage;
+        uint armor;
+    }
+
+    BigBoss public bigBoss;
+
     constructor(
         string[] memory characterNames,
         string[] memory characterImageURIs,
         uint[] memory characterHp,
         uint[] memory characterAttackDmg,
-        uint[] memory characterAttackSpeed,
-        uint[] memory characterArmor
+        uint[] memory characterArmor,
+        string memory bossName,
+        string memory bossImageURI,
+        uint bossHp,
+        uint bossAttackDamage,
+        uint bossArmor
     ) ERC721("Champions", "CHMP") {
+        bigBoss = BigBoss({
+            name: bossName,
+            imageURI: bossImageURI,
+            hp: bossHp,
+            maxHp: bossHp,
+            attackDamage: bossAttackDamage,
+            armor: bossArmor
+        });
+
+        console.log("Done initializing boss %s w/ HP %s, img %s", bigBoss.name, bigBoss.hp, bigBoss.imageURI);
+
         for(uint i = 0; i < characterNames.length; i += 1) {
             defaultCharacters.push(CharacterAttributes({
                 characterIndex: i,
@@ -44,7 +70,6 @@ contract LeagueOfNFTs is ERC721 {
                 hp: characterHp[i],
                 maxHp: characterHp[i],
                 attackDamage: characterAttackDmg[i],
-                attackSpeed: characterAttackSpeed[i],
                 armor: characterArmor[i]
             }));
 
@@ -65,7 +90,6 @@ contract LeagueOfNFTs is ERC721 {
             hp: defaultCharacters[_characterIndex].hp,
             maxHp: defaultCharacters[_characterIndex].hp,
             attackDamage: defaultCharacters[_characterIndex].attackDamage,
-            attackSpeed: defaultCharacters[_characterIndex].attackSpeed,
             armor: defaultCharacters[_characterIndex].armor
         });
 
@@ -82,7 +106,6 @@ contract LeagueOfNFTs is ERC721 {
         string memory strHp = Strings.toString(charAttributes.hp);
         string memory strMaxHp = Strings.toString(charAttributes.maxHp);
         string memory strAttackDamage = Strings.toString(charAttributes.attackDamage);
-        string memory strAttackSpeed = Strings.toString(charAttributes.attackSpeed);
         string memory strArmor = Strings.toString(charAttributes.armor);
 
         string memory json = Base64.encode(
@@ -95,7 +118,7 @@ contract LeagueOfNFTs is ERC721 {
                         Strings.toString(_tokenId),
                         "\", \"description\": \"This is an NFT that lets people play in the game League of NFTs!\", \"image\": \"",
                         charAttributes.imageURI,
-                        "\", \"attributes\": [ { \"trait_type\": \"Health Points\", \"value\": ",strHp,", \"max_value\":", strMaxHp,"}, { \"trait_type\": \"Attack Damage\", \"value\": ",strAttackDamage,"}, { \"trait_type\": \"Attack Speed\", \"value\": ",strAttackSpeed,"}, { \"trait_type\": \"Armor\", \"value\": ",strArmor,"} ]}"
+                        "\", \"attributes\": [ { \"trait_type\": \"Health Points\", \"value\": ",strHp,", \"max_value\":", strMaxHp,"}, { \"trait_type\": \"Attack Damage\", \"value\": ",strAttackDamage,"}, { \"trait_type\": \"Armor\", \"value\": ",strArmor,"} ]}"
                     )
                 )
             )
@@ -106,5 +129,29 @@ contract LeagueOfNFTs is ERC721 {
         );
 
         return output;
+    }
+
+    function attackBoss() public {
+        uint256 nftTokenIdOfPlayer = nftHolders[msg.sender];
+        CharacterAttributes storage player = nftHolderAttributes[nftTokenIdOfPlayer];
+        console.log("\nPlayer w/ character %s about to attack. Has %s HP and %s AD", player.name, player.hp, player.attackDamage);
+        console.log("Boss %s has %s HP and %s AD", bigBoss.name, bigBoss.hp, bigBoss.attackDamage);
+
+        require(player.hp > 0, "Must have HP to attack boss.");
+        require(bigBoss.hp > 0, "Boss must have HP to attack.");
+
+        if (bigBoss.hp < player.attackDamage - bigBoss.armor) {
+            bigBoss.hp = 0;
+        } else {
+            bigBoss.hp = bigBoss.hp - Math.max(30 + player.attackDamage - bigBoss.armor, 0);
+        }
+
+        if (player.hp < bigBoss.attackDamage - player.armor) {
+            player.hp = 0;
+        } else {
+            player.hp = player.hp - Math.max(bigBoss.attackDamage - player.armor, 0);
+        }
+
+        console.log("Boss attacked player. New player hp: %s\n", player.hp);
     }
 }
