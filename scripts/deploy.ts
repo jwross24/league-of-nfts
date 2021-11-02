@@ -15,26 +15,22 @@ async function main() {
     "Rift Herald",
     "https://static.wikia.nocookie.net/leagueoflegends/images/5/54/Rift_Herald_Render.png/revision/latest/scale-to-width-down/699?cb=20190806000114",
     10000,
-    600,
+    60,
     50
   );
   await gameContract.deployed();
   console.log("Contract deployed to: ", gameContract.address);
 
-  let txn;
-  txn = await gameContract.mintCharacterNFT(0);
+  let txn = await gameContract.mintCharacterNFT(0);
   await txn.wait();
-  console.log("Minted NFT #1");
 
-  txn = await gameContract.mintCharacterNFT(1);
+  txn = await gameContract.attackBoss();
   await txn.wait();
-  console.log("Minted NFT #2");
 
-  txn = await gameContract.mintCharacterNFT(2);
+  txn = await gameContract.attackBoss();
   await txn.wait();
-  console.log("Minted NFT #3");
 
-  console.log("Done deploying and minting!");
+  console.log("Done!");
 }
 
 async function runMain() {
